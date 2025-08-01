@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import MongoStore from "connect-mongo";
 
 import router from "./routes";
+import adminRouter from './routes/admin.router';
 
 import connectDB from "./db";
 
@@ -49,11 +50,12 @@ app.use(
 app.use(bodyParser.json({ limit: "15360mb", type: "application/json" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-connectDB();
+connectDB(); // Enable MongoDB connection
 
 app.use(morgan("combined"));
 
 app.use("/api", router);
+app.use('/api', adminRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, Lino Backend!");
@@ -94,49 +96,26 @@ var uploadPhoto = multer({ storage: storagePhotos })
 
 const cpUpload = uploadPhoto.fields([{ name: 'avatar', maxCount: 1 }, { name: 'gallery', maxCount: 5 }])
 
+// Legacy upload endpoint - keeping for backward compatibility but should use /api/upload routes
 app.post('/UploadPhoto', cpUpload,
   async (req, res) => {
     try {
-      // const profile = await User.findOne({
-      //     userUid: req.params.userUid,
-      // });
-      // if (!profile) {
-      //     return res.status(404).json({ message: "Profile not found" });
-      // }
-
       console.log("called uploadPhoto");
       console.log(req.body, "called uploadPhoto body");
-      console.log(req.file, "called uploadPhoto file");
+      console.log((req as any).files || (req as any).file, "called uploadPhoto files");
 
-      // var _uid = req.body.uid;
-      // var file = req.file;
-
-      // if (!file) {
-      //   return res.status(400).send('No file uploaded.');
-      // }
-
-      // const resizedFilePath = path.resolve(__dirname, 'uploads', `300x300-${file.filename}`);
-
-      // if (file) {
-      //   sharp(file.path).resize(300, 300).toFile(resizedFilePath, (err) => {
-      //     if (err) {
-      //       console.log('sharp>>>', err);
-      //     }
-      //     else {
-      //       console.log('resize ok !');
-      //     }
-      //   })
-      // }
-      // else throw 'error';
-      // const updatedProfile = await profile.save();
-      // res.status(200).json(updatedProfile);
-      res.status(200).json("success");
+      // This is a legacy endpoint - recommend using /api/upload/avatar/:userId instead
+      res.status(200).json({ 
+        message: "Legacy upload endpoint - use /api/upload routes for proper authentication",
+        success: true 
+      });
     } catch (err) {
       res.status(500).json({ error: err });
     }
   })
 
-app.listen(port, () => {
+app.listen(Number(port), '0.0.0.0', () => {
   console.log(uuidv4(), "df");
   console.log(`Server is running on port ${port}`);
+  console.log(`Server accessible at http://localhost:${port}`);
 });
